@@ -72,6 +72,7 @@ prog
 			{ url, username, password, query, assignees, timeperiod, delimiter, nounits, humanize, colorize },
 			logger
 		) => {
+			assignees = assignees.map((a) => a.trim());
 			const baseUrl = new URL('/rest/api/latest/', url);
 			const api = new JiraApi(baseUrl, username, password);
 			query = `worklogAuthor in (${assignees.join(',')}) AND (${query})`;
@@ -107,7 +108,7 @@ prog
 				if (humanize) {
 					durationStr = humanizeDuration(duration * 1000);
 				} else {
-					durationStr = duration / 60 / 60 / hoursInDay;
+					durationStr = (duration / 60 / 60 / hoursInDay).toFixed(2);
 					if (!nounits) durationStr += 'd';
 				}
 
