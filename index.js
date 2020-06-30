@@ -56,6 +56,8 @@ prog
 		undefined,
 		false
 	)
+	.option('--hoursinaday <hoursinaday>', 'Defines how many worklog hours in a day', prog.FLOAT, 6, false)
+	.option('--daysinayear <daysinayear>', 'Defines how many working days in a year', prog.FLOAT, 247, false)
 	.option(
 		'--delimiter <delimiter>',
 		'Delimiter that is used in the output to separate the username and the duration',
@@ -69,7 +71,20 @@ prog
 	.action(
 		async (
 			args,
-			{ url, username, password, query, assignees, timeperiod, delimiter, nounits, humanize, colorize },
+			{
+				url,
+				username,
+				password,
+				query,
+				assignees,
+				timeperiod,
+				hoursinaday,
+				daysinayear,
+				delimiter,
+				nounits,
+				humanize,
+				colorize
+			},
 			logger
 		) => {
 			assignees = assignees.map((a) => a.trim());
@@ -104,14 +119,26 @@ prog
 			}
 
 			for (let user in result) {
-				const hoursInDay = 6;
 				const duration = result[user];
 				let durationStr;
 
 				if (humanize) {
-					durationStr = humanizeDuration(duration * 1000);
+					durationStr = humanizeDuration(duration * 1000, {
+						unitMeasures: {
+							ms: 1,
+							s: 1000,
+							m: 1000 * 60,
+							h: 1000 * 60 * 60,
+							d: 1000 * 60 * 60 * hoursinaday,
+							w: 1000 * 60 * 60 * hoursinaday * (daysinayear / (365.25 / 7)),
+							mo: 1000 * 60 * 60 * hoursinaday * (daysinayear / 12),
+							y: 1000 * 60 * 60 * hoursinaday * daysinayear
+						},
+						units: [ 'y', 'mo', 'w', 'd', 'h', 'm' ],
+						round: true
+					});
 				} else {
-					durationStr = (duration / 60 / 60 / hoursInDay).toFixed(2);
+					durationStr = (duration / 60 / 60 / hoursinaday).toFixed(2);
 					if (!nounits) durationStr += 'd';
 				}
 
