@@ -21,7 +21,7 @@ prog
 		'-q, --query <query>',
 		'A JQL query to retrieve the items. "worklogAuthor" clause is added automatically',
 		prog.STRING,
-		'',
+		undefined,
 		false
 	)
 	.option(
@@ -59,6 +59,22 @@ prog
 	.option('--hoursinaday <hoursinaday>', 'Defines how many worklog hours in a day', prog.FLOAT, 6, false)
 	.option('--daysinayear <daysinayear>', 'Defines how many working days in a year', prog.FLOAT, 247, false)
 	.option(
+		'--itemtype <itemtype>',
+		'Allows you to choose one of the predefined filters: SupportRequests or ExternalBugs',
+		(value) => {
+			switch (value.toLowerCase()) {
+				case 'supportrequests':
+					return 'Type = SupportRequest';
+				case 'externalbugs':
+					return "Type = Bug and 'How Found' = External";
+				default:
+					throw Error('Unsupported predefined filter');
+			}
+		},
+		undefined,
+		false
+	)
+	.option(
 		'--delimiter <delimiter>',
 		'Delimiter that is used in the output to separate the username and the duration',
 		prog.STRING,
@@ -81,6 +97,7 @@ prog
 				timeperiod,
 				hoursinaday,
 				daysinayear,
+				itemtype,
 				delimiter,
 				nounits,
 				humanize,
@@ -92,14 +109,20 @@ prog
 			assignees = assignees.map((a) => a.trim());
 			const baseUrl = new URL('/rest/api/latest/', url);
 			const api = new JiraApi(baseUrl, username, password);
-			query = `worklogAuthor in (${assignees.join(',')}) AND (${query})`;
+			let fullQuery = `worklogAuthor in (${assignees.join(',')})`;
 			if (timeperiod) {
-				query = `worklogDate >= ${timeperiod.start} AND worklogDate <= ${timeperiod.end} AND ${query}`;
+				fullQuery = `worklogDate >= ${timeperiod.start} AND worklogDate <= ${timeperiod.end} AND ${fullQuery}`;
 			}
-			logger.debug('The JQL query has been prepared', { query });
+			if (itemtype) {
+				fullQuery = `${itemtype} AND ${fullQuery}`;
+			}
+			if (query) {
+				fullQuery = `${fullQuery} AND (${query})`;
+			}
+			if (fullQuery) logger.debug('The JQL query has been prepared', { fullQuery });
 			const result = {};
 
-			const searchResult = await api.searchItems(query);
+			const searchResult = await api.searchItems(fullQuery);
 
 			logger.debug('The items have been retrieved from JIRA', { itemsCount: searchResult.issues.length });
 
