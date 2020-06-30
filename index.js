@@ -4,6 +4,7 @@ process.removeAllListeners('warning'); // to disable 'ExperimentalWarning: The f
 const pkg = require('./package.json');
 const prog = require('caporal');
 const humanizeDuration = require('humanize-duration');
+const moment = require('moment');
 const { JiraApi } = require('./api');
 
 prog
@@ -30,7 +31,32 @@ prog
 		true
 	)
 	.option(
-		'-d, --delimiter <delimiter>',
+		'-t, --timeperiod <timeperiod>',
+		'A period of time (a quarter or a month) to retrieve the worklog for. E.g., 2020 Q3, 2020-06, January, 2020, etc.',
+		(value) => {
+			const quarterFormats = [ 'YYYY \\QQ', 'YYYY, \\QQ' ];
+			const monthFormats = [ 'YYYY-MM', 'YYYY MM', 'MMM, YYYY', 'MMMM, YYYY' ];
+
+			const m = moment(value, quarterFormats.concat(monthFormats), 'en', true);
+			if (m.isValid()) {
+				const format = m.creationData().format;
+				let unit;
+				if (quarterFormats.includes(format)) {
+					unit = 'quarter';
+				} else {
+					unit = 'month';
+				}
+
+				return { start: m.startOf(unit).format('YYYY-MM-DD'), end: m.endOf(unit).format('YYYY-MM-DD') };
+			} else {
+				throw Error('Invalid date period');
+			}
+		},
+		undefined,
+		false
+	)
+	.option(
+		'--delimiter <delimiter>',
 		'Delimiter that is used in the output to separate the username and the duration',
 		prog.STRING,
 		'  ',
@@ -38,46 +64,55 @@ prog
 	)
 	.option('--humanize', 'Formats the worklog duration to a human-readable format', prog.BOOL, false, false)
 	.option('--nounits', 'Omits the units for the worklog duration, printing only the numbers', prog.BOOL, false, false)
-	.action(async (args, { url, username, password, query, assignees, delimiter, nounits, humanize }, logger) => {
-		const baseUrl = new URL('/rest/api/latest/', url);
-		const api = new JiraApi(baseUrl, username, password);
-		query = `worklogAuthor in (${assignees.join(',')}) AND (${query})`;
-		const result = {};
-
-		const searchResult = await api.searchItems(query);
-
-		for (let item of searchResult.issues) {
-			let { worklog } = item.fields;
-
-			if (worklog.total > worklog.maxResults) {
-				worklog = await api.getWorklogByItemKey(item.key);
+	.action(
+		async (
+			args,
+			{ url, username, password, query, assignees, timeperiod, delimiter, nounits, humanize },
+			logger
+		) => {
+			const baseUrl = new URL('/rest/api/latest/', url);
+			const api = new JiraApi(baseUrl, username, password);
+			query = `worklogAuthor in (${assignees.join(',')}) AND (${query})`;
+			if (timeperiod) {
+				query = `worklogDate >= ${timeperiod.start} AND worklogDate <= ${timeperiod.end} AND ${query}`;
 			}
+			const result = {};
 
-			for (let worklogItem of worklog.worklogs) {
-				const user = worklogItem.author.key;
+			const searchResult = await api.searchItems(query);
 
-				if (assignees.includes(user)) {
-					if (!result[user]) result[user] = 0;
-					result[user] += worklogItem.timeSpentSeconds;
+			for (let item of searchResult.issues) {
+				let { worklog } = item.fields;
+
+				if (worklog.total > worklog.maxResults) {
+					worklog = await api.getWorklogByItemKey(item.key);
+				}
+
+				for (let worklogItem of worklog.worklogs) {
+					const user = worklogItem.author.key;
+
+					if (assignees.includes(user)) {
+						if (!result[user]) result[user] = 0;
+						result[user] += worklogItem.timeSpentSeconds;
+					}
 				}
 			}
-		}
 
-		for (let user in result) {
-			const hoursInDay = 6;
-			const duration = result[user];
-			let durationStr;
+			for (let user in result) {
+				const hoursInDay = 6;
+				const duration = result[user];
+				let durationStr;
 
-			if (humanize) {
-				durationStr = humanizeDuration(duration * 1000);
-			} else {
-				durationStr = duration / 60 / 60 / hoursInDay;
-				if (!nounits) durationStr += 'd';
+				if (humanize) {
+					durationStr = humanizeDuration(duration * 1000);
+				} else {
+					durationStr = duration / 60 / 60 / hoursInDay;
+					if (!nounits) durationStr += 'd';
+				}
+
+				console.log(`${user}${delimiter}${durationStr}`);
+				// console.log(chalk.bold.blue(`${user}`), chalk.green(`${days}d`));
 			}
-
-			console.log(`${user}${delimiter}${durationStr}`);
-			// console.log(chalk.bold.blue(`${user}`), chalk.green(`${days}d`));
 		}
-	});
+	);
 
 prog.parse(process.argv);
