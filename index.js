@@ -5,6 +5,7 @@ const pkg = require('./package.json');
 const prog = require('caporal');
 const humanizeDuration = require('humanize-duration');
 const moment = require('moment');
+const chalk = require('chalk');
 const { JiraApi } = require('./api');
 
 prog
@@ -64,10 +65,11 @@ prog
 	)
 	.option('--humanize', 'Formats the worklog duration to a human-readable format', prog.BOOL, false, false)
 	.option('--nounits', 'Omits the units for the worklog duration, printing only the numbers', prog.BOOL, false, false)
+	.option('-c, --colorize', 'Colorizes the console output', prog.BOOL, false, false)
 	.action(
 		async (
 			args,
-			{ url, username, password, query, assignees, timeperiod, delimiter, nounits, humanize },
+			{ url, username, password, query, assignees, timeperiod, delimiter, nounits, humanize, colorize },
 			logger
 		) => {
 			const baseUrl = new URL('/rest/api/latest/', url);
@@ -109,8 +111,11 @@ prog
 					if (!nounits) durationStr += 'd';
 				}
 
+				if (colorize) {
+					user = chalk.bold.blue(user);
+					durationStr = chalk.green(durationStr);
+				}
 				console.log(`${user}${delimiter}${durationStr}`);
-				// console.log(chalk.bold.blue(`${user}`), chalk.green(`${days}d`));
 			}
 		}
 	);
