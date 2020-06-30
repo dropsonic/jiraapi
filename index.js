@@ -68,6 +68,7 @@ prog
 	.option('--humanize', 'Formats the worklog duration to a human-readable format', prog.BOOL, false, false)
 	.option('--nounits', 'Omits the units for the worklog duration, printing only the numbers', prog.BOOL, false, false)
 	.option('-c, --colorize', 'Colorizes the console output', prog.BOOL, false, false)
+	.option('--showtotal', 'Shows the totals', prog.BOOL, true, false)
 	.action(
 		async (
 			args,
@@ -83,7 +84,8 @@ prog
 				delimiter,
 				nounits,
 				humanize,
-				colorize
+				colorize,
+				showtotal
 			},
 			logger
 		) => {
@@ -118,8 +120,9 @@ prog
 				}
 			}
 
-			for (let user in result) {
-				const duration = result[user];
+			let totalDuration = 0;
+
+			const formatDuration = (duration) => {
 				let durationStr;
 
 				if (humanize) {
@@ -142,11 +145,33 @@ prog
 					if (!nounits) durationStr += 'd';
 				}
 
+				return durationStr;
+			};
+
+			for (let user in result) {
+				const duration = result[user];
+				totalDuration += duration;
+				let durationStr = formatDuration(duration);
+
 				if (colorize) {
 					user = chalk.bold.blue(user);
 					durationStr = chalk.green(durationStr);
 				}
+
 				console.log(`${user}${delimiter}${durationStr}`);
+			}
+
+			if (showtotal) {
+				console.log();
+				let totalTitle = 'Total:';
+				let totalStr = formatDuration(totalDuration);
+
+				if (colorize) {
+					totalTitle = chalk.bold.underline.blueBright(totalTitle);
+					totalStr = chalk.bold.greenBright(totalStr);
+				}
+
+				console.log(totalTitle, totalStr);
 			}
 		}
 	);
