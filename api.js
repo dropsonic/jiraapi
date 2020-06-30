@@ -12,6 +12,14 @@ class JiraApi {
 				maxResults: 10000
 			}
 		});
+
+		// TODO: remove after upgrading axios to 0.20.0
+		// https://github.com/axios/axios/issues/2190
+		this.api.interceptors.request.use((config) => {
+			if (!config.params) config.params = {};
+			config.params.maxResults = 10000;
+			return config;
+		});
 	}
 
 	async getItemByKey(key) {
