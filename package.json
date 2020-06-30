@@ -1,0 +1,22 @@
+{
+	"name": "jiraapi",
+	"version": "1.0.0",
+	"description": "A set of helper tools to work with JIRA API",
+	"bin": {
+		"jiraapi": "index.js"
+	},
+	"main": "index.js",
+	"scripts": {
+		"start": "node index.js"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"axios": "^0.19.2",
+		"caporal": "^1.4.0",
+		"chalk": "^4.1.0",
+		"humanize-duration": "^3.23.1",
+		"pluralize": "^8.0.0"
+	}
+}
