@@ -121,7 +121,7 @@ prog
 			},
 			logger
 		) => {
-			assignees = assignees.map((a) => a.trim());
+			assignees = assignees.map((a) => a.trim().toLowerCase());
 			const baseUrl = new URL('/rest/api/latest/', url);
 			const api = new JiraApi(baseUrl, username, password);
 			let fullQuery = `worklogAuthor in (${assignees.join(',')})`;
@@ -149,7 +149,7 @@ prog
 				}
 
 				for (let worklogItem of worklog.worklogs) {
-					const user = worklogItem.author.key;
+					const user = worklogItem.author.key.toLowerCase();
 
 					if (assignees.includes(user)) {
 						if (!result[user]) result[user] = 0;
