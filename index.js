@@ -81,10 +81,10 @@ prog
 		'  ',
 		false
 	)
-	.option('--humanize', 'Formats the worklog duration to a human-readable format', prog.BOOL, false, false)
-	.option('--nounits', 'Omits the units for the worklog duration, printing only the numbers', prog.BOOL, false, false)
-	.option('-c, --colorize', 'Colorizes the console output', prog.BOOL, false, false)
-	.option('--showtotal', 'Shows the totals', prog.BOOL, true, false)
+	.option('--humanize', 'Format the worklog duration to a human-readable format', prog.BOOL)
+	.option('--nounits', 'Omit the units for the worklog duration, printing only the numbers', prog.BOOL)
+	.option('--no-color', 'Disable colors', prog.BOOL, false, false)
+	.option('--hidetotal', 'Hide the totals', prog.BOOL)
 	.action(
 		async (
 			args,
@@ -101,8 +101,8 @@ prog
 				delimiter,
 				nounits,
 				humanize,
-				colorize,
-				showtotal
+				nocolor,
+				hidetotal
 			},
 			logger
 		) => {
@@ -176,7 +176,7 @@ prog
 				totalDuration += duration;
 				let durationStr = formatDuration(duration);
 
-				if (colorize) {
+				if (!nocolor) {
 					user = chalk.bold.blue(user);
 					durationStr = chalk.green(durationStr);
 				}
@@ -184,17 +184,17 @@ prog
 				console.log(`${user}${delimiter}${durationStr}`);
 			}
 
-			if (showtotal) {
+			if (!hidetotal) {
 				console.log();
-				let totalTitle = 'Total:';
+				let totalTitle = 'Total';
 				let totalStr = formatDuration(totalDuration);
 
-				if (colorize) {
+				if (!nocolor) {
 					totalTitle = chalk.bold.underline.blueBright(totalTitle);
 					totalStr = chalk.bold.greenBright(totalStr);
 				}
 
-				console.log(totalTitle, totalStr);
+				console.log(`${totalTitle}${delimiter}${totalStr}`);
 			}
 		}
 	);
