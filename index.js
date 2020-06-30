@@ -75,6 +75,20 @@ prog
 		false
 	)
 	.option(
+		'--orderby <orderby>',
+		'Specifies a sort order: username or duration',
+		(value) => {
+			switch (value.toLowerCase()) {
+				case 'username':
+				case 'duration':
+					return value;
+			}
+			throw Error('Unsupported sort order');
+		},
+		'username',
+		false
+	)
+	.option(
 		'--delimiter <delimiter>',
 		'Delimiter that is used in the output to separate the username and the duration',
 		prog.STRING,
@@ -98,6 +112,7 @@ prog
 				hoursinaday,
 				daysinayear,
 				itemtype,
+				orderby,
 				delimiter,
 				nounits,
 				humanize,
@@ -143,8 +158,6 @@ prog
 				}
 			}
 
-			let totalDuration = 0;
-
 			const formatDuration = (duration) => {
 				let durationStr;
 
@@ -171,17 +184,29 @@ prog
 				return durationStr;
 			};
 
-			for (let user in result) {
-				const duration = result[user];
+			const orderedResult = Object.keys(result).map((k) => ({ username: k, duration: result[k] }));
+
+			switch (orderby) {
+				case 'username':
+					orderedResult.sort((a, b) => a.username.localeCompare(b.username, 'en-US'));
+					break;
+				case 'duration':
+					orderedResult.sort((a, b) => b.duration - a.duration);
+					break;
+			}
+
+			let totalDuration = 0;
+
+			for (let { username, duration } of orderedResult) {
 				totalDuration += duration;
 				let durationStr = formatDuration(duration);
 
 				if (!nocolor) {
-					user = chalk.bold.blue(user);
+					username = chalk.bold.blue(username);
 					durationStr = chalk.green(durationStr);
 				}
 
-				console.log(`${user}${delimiter}${durationStr}`);
+				console.log(`${username}${delimiter}${durationStr}`);
 			}
 
 			if (!hidetotal) {
