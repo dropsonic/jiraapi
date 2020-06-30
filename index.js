@@ -79,9 +79,12 @@ prog
 			if (timeperiod) {
 				query = `worklogDate >= ${timeperiod.start} AND worklogDate <= ${timeperiod.end} AND ${query}`;
 			}
+			logger.debug('The JQL query has been prepared', { query });
 			const result = {};
 
 			const searchResult = await api.searchItems(query);
+
+			logger.debug('The items have been retrieved from JIRA', { itemsCount: searchResult.issues.length });
 
 			for (let item of searchResult.issues) {
 				let { worklog } = item.fields;
