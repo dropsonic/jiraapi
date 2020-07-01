@@ -1,5 +1,5 @@
 {
-	"name": "jiraapi",
+	"name": "@acumatica/jiraapi",
 	"version": "1.0.0",
 	"description": "A set of helper tools to work with JIRA API",
 	"bin": {
@@ -9,9 +9,9 @@
 	"scripts": {
 		"start": "node index.js"
 	},
-	"keywords": [],
-	"author": "",
-	"license": "ISC",
+	"keywords": [ "Acumatica", "JIRA" ],
+	"author": "Vladimir Panchenko",
+	"license": "GPL-3.0",
 	"dependencies": {
 		"axios": "^0.19.2",
 		"caporal": "^1.4.0",
