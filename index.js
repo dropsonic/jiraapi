@@ -142,10 +142,10 @@ prog
 			logger.debug('The items have been retrieved from JIRA', { itemsCount: searchResult.issues.length });
 
 			for (let item of searchResult.issues) {
-				let { worklog } = item.fields;
+				let { key, worklog } = item.fields;
 
 				if (worklog.total > worklog.maxResults) {
-					worklog = await api.getWorklogByItemKey(item.key);
+					worklog = await api.getWorklogByItemKey(key);
 				}
 
 				for (let worklogItem of worklog.worklogs) {
