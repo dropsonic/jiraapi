@@ -1,7 +1,19 @@
 const axios = require('axios').default;
 
 class JiraApi {
-	constructor(baseUrl, username, password) {
+	constructor(baseUrl, username, password, logger) {
+		const logResponse = (response) => {
+			const { config, status, statusText } = response;
+			const { baseURL, method } = response.config;
+			const uri = new URL(axios.getUri(response.config), baseURL).toString();
+			if (logger)
+				logger.debug('HTTP request completed', {
+					method: method.toUpperCase(),
+					uri,
+					status: `${status} ${statusText}`
+				});
+		};
+
 		this.api = axios.create({
 			baseURL: baseUrl.toString(),
 			auth: {
@@ -14,8 +26,13 @@ class JiraApi {
 		});
 
 		this.api.interceptors.response.use(
-			(response) => response,
+			(response) => {
+				logResponse(response);
+				return response;
+			},
 			(error) => {
+				logResponse(error.response);
+
 				if (error.response.status === 401) {
 					throw Error('Invalid credentials. Please check that your username and password are correct.');
 				} else if (error.response.status === 403) {

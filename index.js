@@ -123,7 +123,7 @@ prog
 		) => {
 			assignees = assignees.map((a) => a.trim().toLowerCase());
 			const baseUrl = new URL('/rest/api/latest/', url);
-			const api = new JiraApi(baseUrl, username, password);
+			const api = new JiraApi(baseUrl, username, password, logger);
 			let fullQuery = `worklogAuthor in (${assignees.join(',')})`;
 			if (timeperiod) {
 				fullQuery = `worklogDate >= ${timeperiod.start} AND worklogDate <= ${timeperiod.end} AND ${fullQuery}`;
