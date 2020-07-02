@@ -49,7 +49,7 @@ prog
 					unit = 'month';
 				}
 
-				return { start: m.startOf(unit).format('YYYY-MM-DD'), end: m.endOf(unit).format('YYYY-MM-DD') };
+				return { start: m.clone().startOf(unit), end: m.clone().endOf(unit) };
 			} else {
 				throw Error('Invalid date period');
 			}
@@ -128,7 +128,9 @@ prog
 			const api = new JiraApi(url, username, password, logger);
 			let fullQuery = `worklogAuthor in (${assignees.join(',')})`;
 			if (timeperiod) {
-				fullQuery = `worklogDate >= ${timeperiod.start} AND worklogDate <= ${timeperiod.end} AND ${fullQuery}`;
+				fullQuery = `worklogDate >= ${timeperiod.start.format(
+					'YYYY-MM-DD'
+				)} AND worklogDate <= ${timeperiod.end.format('YYYY-MM-DD')} AND ${fullQuery}`;
 			}
 			if (itemtype) {
 				fullQuery = `${itemtype} AND ${fullQuery}`;
@@ -155,10 +157,23 @@ prog
 					const user = worklogItem.author.key.toLowerCase();
 
 					if (assignees.includes(user)) {
-						if (!result[user]) result[user] = { [Symbol.for('total')]: 0 };
-						if (!result[user][key]) result[user][key] = 0;
-						result[user][key] += worklogItem.timeSpentSeconds;
-						result[user][Symbol.for('total')] += worklogItem.timeSpentSeconds;
+						let started = moment(worklogItem.started);
+						let ended = started.clone().add(worklogItem.timeSpentSeconds, 's');
+
+						if (
+							started.isBetween(timeperiod.start, timeperiod.end) ||
+							ended.isBetween(timeperiod.start, timeperiod.end)
+						) {
+							if (started.isBefore(timeperiod.start)) started = timeperiod.start;
+							if (ended.isAfter(timeperiod.end)) ended = timeperiod.end;
+
+							const duration = ended.diff(started, 's');
+
+							if (!result[user]) result[user] = { [Symbol.for('total')]: 0 };
+							if (!result[user][key]) result[user][key] = 0;
+							result[user][key] += duration;
+							result[user][Symbol.for('total')] += duration;
+						}
 					}
 				}
 			}
