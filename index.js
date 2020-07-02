@@ -153,8 +153,10 @@ prog
 					const user = worklogItem.author.key.toLowerCase();
 
 					if (assignees.includes(user)) {
-						if (!result[user]) result[user] = 0;
-						result[user] += worklogItem.timeSpentSeconds;
+						if (!result[user]) result[user] = { total: 0 };
+						if (!result[user][key]) result[user][key] = 0;
+						result[user][key] += worklogItem.timeSpentSeconds;
+						result[user].total += worklogItem.timeSpentSeconds;
 					}
 				}
 			}
@@ -185,7 +187,7 @@ prog
 				return durationStr;
 			};
 
-			const orderedResult = Object.keys(result).map((k) => ({ username: k, duration: result[k] }));
+			const orderedResult = Object.keys(result).map((k) => ({ username: k, duration: result[k].total }));
 
 			switch (orderby) {
 				case 'username':
