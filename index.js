@@ -125,6 +125,8 @@ prog
 			logger
 		) => {
 			assignees = assignees.map((a) => a.trim().toLowerCase());
+			const result = {};
+			assignees.forEach((a) => (result[a] = { [Symbol.for('total')]: 0 }));
 			const api = new JiraApi(url, username, password, logger);
 			let fullQuery = `worklogAuthor in (${assignees.join(',')})`;
 			if (timeperiod) {
@@ -139,7 +141,6 @@ prog
 				fullQuery = `${fullQuery} AND (${query})`;
 			}
 			if (fullQuery) logger.debug('The JQL query has been prepared', { fullQuery });
-			const result = {};
 
 			const searchResult = await api.searchItems(fullQuery);
 
@@ -169,7 +170,6 @@ prog
 
 							const duration = ended.diff(started, 's');
 
-							if (!result[user]) result[user] = { [Symbol.for('total')]: 0 };
 							if (!result[user][key]) result[user][key] = 0;
 							result[user][key] += duration;
 							result[user][Symbol.for('total')] += duration;
