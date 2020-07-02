@@ -22,7 +22,30 @@
                 "vpanchenko, itazitdinov, szinyakova, anna.sklyarenko, snikomarov",
                 "-t",
                 "2020 Q2",
-                "-c",
+                "-v",
+                "-p",
+                "***"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Program (detailed mode)",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}\\index.js",
+            "args": [
+                "worklog",
+                "-u",
+                "vpanchenko",
+                "-q",
+                "key = ATR-138",
+                "-a",
+                "vpanchenko",
+                "-t",
+                "2018 Q3",
+                "--detailed",
                 "-v",
                 "-p",
                 "***"
