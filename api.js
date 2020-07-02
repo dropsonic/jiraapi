@@ -1,4 +1,5 @@
 const axios = require('axios').default;
+const urlJoin = require('url-join');
 
 class JiraApi {
 	constructor(baseUrl, username, password, logger) {
@@ -6,8 +7,8 @@ class JiraApi {
 
 		const logResponse = (response) => {
 			const { config, status, statusText } = response;
-			const { baseURL, method } = response.config;
-			const uri = new URL(axios.getUri(response.config), baseURL).toString();
+			const { baseURL, method } = config;
+			const uri = urlJoin(baseURL, axios.getUri(config));
 			if (logger)
 				logger.debug('HTTP request completed', {
 					method: method.toUpperCase(),
@@ -17,7 +18,7 @@ class JiraApi {
 		};
 
 		this.api = axios.create({
-			baseURL: baseUrl.toString(),
+			baseURL: urlJoin(baseUrl, '/rest/api/latest/'),
 			auth: {
 				username: username,
 				password: password
@@ -72,7 +73,7 @@ class JiraApi {
 	}
 
 	getViewUrlForItem(key) {
-		return new URL(`/browse/${key}`, this.baseUrl).toString();
+		return urlJoin(this.baseUrl, `/browse/${key}`);
 	}
 }
 
