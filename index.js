@@ -58,6 +58,7 @@ prog
 	)
 	.option('--hoursinaday <hoursinaday>', 'Defines how many worklog hours in a day', prog.FLOAT, 6, false)
 	.option('--daysinayear <daysinayear>', 'Defines how many working days in a year', prog.FLOAT, 247, false)
+	.option('-d, --detailed', 'Show the detailed worklog for each JIRA item')
 	.option(
 		'--itemtype <itemtype>',
 		'Allows you to choose one of the predefined filters: SupportRequests or ExternalBugs',
@@ -92,7 +93,7 @@ prog
 		'--delimiter <delimiter>',
 		'Delimiter that is used in the output to separate the username and the duration',
 		prog.STRING,
-		'  ',
+		'\t',
 		false
 	)
 	.option('--humanize', 'Format the worklog duration to a human-readable format', prog.BOOL)
@@ -111,6 +112,7 @@ prog
 				timeperiod,
 				hoursinaday,
 				daysinayear,
+				detailed,
 				itemtype,
 				orderby,
 				delimiter,
@@ -153,10 +155,10 @@ prog
 					const user = worklogItem.author.key.toLowerCase();
 
 					if (assignees.includes(user)) {
-						if (!result[user]) result[user] = { total: 0 };
+						if (!result[user]) result[user] = { [Symbol.for('total')]: 0 };
 						if (!result[user][key]) result[user][key] = 0;
 						result[user][key] += worklogItem.timeSpentSeconds;
-						result[user].total += worklogItem.timeSpentSeconds;
+						result[user][Symbol.for('total')] += worklogItem.timeSpentSeconds;
 					}
 				}
 			}
@@ -187,7 +189,13 @@ prog
 				return durationStr;
 			};
 
-			const orderedResult = Object.keys(result).map((k) => ({ username: k, duration: result[k].total }));
+			const orderedResult = Object.keys(result).map((k) => ({
+				username: k,
+				duration: result[k][Symbol.for('total')],
+				details: Object.keys(result[k])
+					.map((dk) => ({ key: dk, duration: result[k][dk] }))
+					.sort((a, b) => b.duration - a.duration)
+			}));
 
 			switch (orderby) {
 				case 'username':
@@ -200,7 +208,7 @@ prog
 
 			let totalDuration = 0;
 
-			for (let { username, duration } of orderedResult) {
+			for (let { username, duration, details } of orderedResult) {
 				totalDuration += duration;
 				let durationStr = formatDuration(duration);
 
@@ -210,10 +218,25 @@ prog
 				}
 
 				console.log(`${username}${delimiter}${durationStr}`);
+
+				if (detailed) {
+					for (let { key, duration } of details) {
+						durationStr = formatDuration(duration);
+
+						if (!nocolor) {
+							key = chalk.bold.cyan(key);
+							durationStr = chalk.green(durationStr);
+						}
+
+						console.log(`\t${key}${delimiter}${durationStr}`);
+					}
+
+					console.log();
+				}
 			}
 
 			if (!hidetotal) {
-				console.log();
+				if (!detailed) console.log();
 				let totalTitle = 'Total';
 				let totalStr = formatDuration(totalDuration);
 
