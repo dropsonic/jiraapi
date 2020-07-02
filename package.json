@@ -9,7 +9,10 @@
 	"scripts": {
 		"start": "node index.js"
 	},
-	"keywords": [ "Acumatica", "JIRA" ],
+	"keywords": [
+		"Acumatica",
+		"JIRA"
+	],
 	"author": "Vladimir Panchenko",
 	"license": "GPL-3.0",
 	"dependencies": {
@@ -18,6 +21,7 @@
 		"chalk": "^4.1.0",
 		"humanize-duration": "^3.23.1",
 		"moment": "^2.27.0",
-		"pluralize": "^8.0.0"
+		"pluralize": "^8.0.0",
+		"terminal-link": "^2.1.1"
 	}
 }

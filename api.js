@@ -2,6 +2,8 @@ const axios = require('axios').default;
 
 class JiraApi {
 	constructor(baseUrl, username, password, logger) {
+		this.baseUrl = baseUrl;
+
 		const logResponse = (response) => {
 			const { config, status, statusText } = response;
 			const { baseURL, method } = response.config;
@@ -67,6 +69,10 @@ class JiraApi {
 	async searchItems(jqlQuery) {
 		const { data } = await this.api.get('/search', { params: { jql: jqlQuery, fields: 'worklog' } });
 		return data;
+	}
+
+	getViewUrlForItem(key) {
+		return new URL(`/browse/${key}`, this.baseUrl).toString();
 	}
 }
 

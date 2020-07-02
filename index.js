@@ -6,6 +6,7 @@ const prog = require('caporal');
 const humanizeDuration = require('humanize-duration');
 const moment = require('moment');
 const chalk = require('chalk');
+const terminalLink = require('terminal-link');
 const { JiraApi } = require('./api');
 
 prog
@@ -223,12 +224,17 @@ prog
 					for (let { key, duration } of details) {
 						durationStr = formatDuration(duration);
 
+						const itemUrl = api.getViewUrlForItem(key);
+
 						if (!nocolor) {
 							key = chalk.bold.cyan(key);
 							durationStr = chalk.green(durationStr);
 						}
 
-						console.log(`\t${key}${delimiter}${durationStr}`);
+						const itemLink = terminalLink(key, itemUrl, {
+							fallback: (text, url) => `${text} (${url})` // terminal-link inserts zero-width whitespace before and after the url. It corrupts links in some terminals
+						});
+						console.log(`\t${itemLink}${delimiter}${durationStr}`);
 					}
 
 					console.log();
