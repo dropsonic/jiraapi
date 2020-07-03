@@ -7,7 +7,12 @@ const humanizeDuration = require('humanize-duration');
 const moment = require('moment');
 const chalk = require('chalk');
 const terminalLink = require('terminal-link');
+const prompt = require('prompt');
+const keytar = require('keytar');
+const util = require('util');
 const { JiraApi } = require('./api');
+
+prompt.message = '';
 
 prog
 	.version(pkg.version)
@@ -16,8 +21,6 @@ prog
 	.bin(Object.keys(pkg.bin)[0])
 	.command('worklog', 'Retrieves a worklog for all items returned by a JQL query')
 	.option('-j, --url <url>', 'JIRA URL', prog.STRING, 'https://jira.acumatica.com', false)
-	.option('-u, --username <username>', 'Username', prog.STRING, undefined, true)
-	.option('-p, --password <password>', 'Password', prog.STRING, undefined, true)
 	.option(
 		'-q, --query <query>',
 		'A JQL query to retrieve the items. "worklogAuthor" clause is added automatically',
@@ -106,8 +109,6 @@ prog
 			args,
 			{
 				url,
-				username,
-				password,
 				query,
 				assignees,
 				timeperiod,
@@ -124,10 +125,38 @@ prog
 			},
 			logger
 		) => {
+			let username, password;
+			const savedCredentials = await keytar.findCredentials(pkg.name);
+			if (savedCredentials && savedCredentials.length > 0) {
+				({ account: username, password } = savedCredentials[0]);
+			} else {
+				const getPrompt = util.promisify(prompt.get); // the default "get" method doesn't work properly with async/await
+				({ username, password } = await getPrompt({
+					properties: {
+						username: {
+							description: 'Enter your username',
+							message: 'Username cannot be empty',
+							type: 'string',
+							required: true
+						},
+						password: {
+							description: 'Enter your password',
+							message: 'Password cannot be empty',
+							type: 'string',
+							required: true,
+							hidden: true,
+							replace: '*'
+						}
+					}
+				}));
+
+				await keytar.setPassword(pkg.name, username, password);
+			}
+
 			assignees = assignees.map((a) => a.trim().toLowerCase());
 			const result = {};
 			assignees.forEach((a) => (result[a] = { [Symbol.for('total')]: 0 }));
-			const api = new JiraApi(url, username, password, logger);
+			const api = new JiraApi(url, username, password, { logger });
 			let fullQuery = `worklogAuthor in (${assignees.join(',')})`;
 			if (timeperiod) {
 				fullQuery = `worklogDate >= ${timeperiod.start.format(
@@ -270,4 +299,5 @@ prog
 		}
 	);
 
+//prompt.start();
 prog.parse(process.argv);

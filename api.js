@@ -2,7 +2,9 @@ const axios = require('axios').default;
 const urlJoin = require('url-join');
 
 class JiraApi {
-	constructor(baseUrl, username, password, logger) {
+	constructor(baseUrl, username, password, options) {
+		const { logger } = options;
+
 		this.baseUrl = baseUrl;
 
 		const logResponse = (response) => {
