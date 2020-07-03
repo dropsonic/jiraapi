@@ -10,7 +10,7 @@ const terminalLink = require('terminal-link');
 const prompt = require('prompt');
 const keytar = require('keytar');
 const util = require('util');
-const { JiraApi } = require('./api');
+const { JiraApi, InvalidCredentialsError } = require('./api');
 
 prompt.message = '';
 
@@ -126,12 +126,10 @@ prog
 			logger
 		) => {
 			let username, password;
-			const savedCredentials = await keytar.findCredentials(pkg.name);
-			if (savedCredentials && savedCredentials.length > 0) {
-				({ account: username, password } = savedCredentials[0]);
-			} else {
-				const getPrompt = util.promisify(prompt.get); // the default "get" method doesn't work properly with async/await
-				({ username, password } = await getPrompt({
+			const getPrompt = util.promisify(prompt.get); // the default "get" method doesn't work properly with async/await
+
+			const askForCredentials = async () => {
+				const { username, password } = await getPrompt({
 					properties: {
 						username: {
 							description: 'Enter your username',
@@ -148,9 +146,21 @@ prog
 							replace: '*'
 						}
 					}
-				}));
+				});
 
 				await keytar.setPassword(pkg.name, username, password);
+				logger.debug('Credentials was saved to the credentials manager', { username });
+
+				return { username, password };
+			};
+
+			const savedCredentials = await keytar.findCredentials(pkg.name);
+
+			if (savedCredentials && savedCredentials.length > 0) {
+				({ account: username, password } = savedCredentials[0]);
+				logger.debug('Saved credentials was retrieved from the credentials manager', { username });
+			} else {
+				({ username, password } = await askForCredentials());
 			}
 
 			assignees = assignees.map((a) => a.trim().toLowerCase());
@@ -171,7 +181,20 @@ prog
 			}
 			if (fullQuery) logger.debug('The JQL query has been prepared', { fullQuery });
 
-			const searchResult = await api.searchItems(fullQuery);
+			let searchResult;
+			let credentialsAreValid = false;
+			while (!credentialsAreValid) {
+				try {
+					searchResult = await api.searchItems(fullQuery);
+					credentialsAreValid = true;
+				} catch (error) {
+					if (error instanceof InvalidCredentialsError) {
+						logger.error(error.message);
+						await keytar.deletePassword(pkg.name, username);
+						api.credentials = await askForCredentials();
+					}
+				}
+			}
 
 			logger.debug('The items have been retrieved from JIRA', { itemsCount: searchResult.issues.length });
 

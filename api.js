@@ -21,10 +21,7 @@ class JiraApi {
 
 		this.api = axios.create({
 			baseURL: urlJoin(baseUrl, '/rest/api/latest/'),
-			auth: {
-				username: username,
-				password: password
-			},
+			auth: { username, password },
 			params: {
 				maxResults: 10000
 			}
@@ -39,7 +36,9 @@ class JiraApi {
 				logResponse(error.response);
 
 				if (error.response.status === 401) {
-					throw Error('Invalid credentials. Please check that your username and password are correct.');
+					throw new InvalidCredentialsError(
+						'Invalid credentials. Please check that your username and password are correct.'
+					);
 				} else if (error.response.status === 403) {
 					throw Error(
 						"You do not have access to the entities you're querying. Please contact the JIRA administrator."
@@ -57,6 +56,14 @@ class JiraApi {
 			config.params.maxResults = 10000;
 			return config;
 		});
+	}
+
+	get credentials() {
+		return this.api.defaults.auth;
+	}
+
+	set credentials(value) {
+		this.api.defaults.auth = value;
 	}
 
 	async getItemByKey(key) {
@@ -79,4 +86,15 @@ class JiraApi {
 	}
 }
 
+class InvalidCredentialsError extends Error {
+	constructor(...params) {
+		super(...params);
+
+		if (Error.captureStackTrace) {
+			Error.captureStackTrace(this, InvalidCredentialsError);
+		}
+	}
+}
+
 module.exports.JiraApi = JiraApi;
+module.exports.InvalidCredentialsError = InvalidCredentialsError;
