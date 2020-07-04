@@ -40,8 +40,8 @@ class JiraApi {
 						'Invalid credentials. Please check that your username and password are correct.'
 					);
 				} else if (error.response.status === 403) {
-					throw Error(
-						"You do not have access to the entities you're querying. Please contact the JIRA administrator."
+					throw new AccessDeniedError(
+						"You do not have access to the entities you're querying. Please contact the JIRA administrator or try another credentials."
 					);
 				} else {
 					return Promise.reject(error);
@@ -96,5 +96,16 @@ class InvalidCredentialsError extends Error {
 	}
 }
 
+class AccessDeniedError extends Error {
+	constructor(...params) {
+		super(...params);
+
+		if (Error.captureStackTrace) {
+			Error.captureStackTrace(this, AccessDeniedError);
+		}
+	}
+}
+
 module.exports.JiraApi = JiraApi;
 module.exports.InvalidCredentialsError = InvalidCredentialsError;
+module.exports.AccessDeniedError = AccessDeniedError;

@@ -9,7 +9,8 @@ const terminalLink = require('terminal-link');
 const prompt = require('prompt');
 const keytar = require('keytar');
 const util = require('util');
-const { JiraApi, InvalidCredentialsError } = require('./api');
+const { JiraApi, InvalidCredentialsError, AccessDeniedError } = require('./api');
+const { action } = require('caporal');
 
 prompt.message = '';
 
@@ -124,9 +125,7 @@ prog
 			},
 			logger
 		) => {
-			let username, password;
 			const getPrompt = util.promisify(prompt.get); // the default "get" method doesn't work properly with async/await
-
 			const askForCredentials = async () => {
 				const { username, password } = await getPrompt({
 					properties: {
@@ -153,6 +152,23 @@ prog
 				return { username, password };
 			};
 
+			const executeApiAction = async (action) => {
+				while (true) {
+					try {
+						return action();
+					} catch (error) {
+						if (error instanceof InvalidCredentialsError || error instanceof AccessDeniedError) {
+							logger.error(error.message);
+							await keytar.deletePassword(pkg.name, username);
+							api.credentials = await askForCredentials();
+						} else {
+							break;
+						}
+					}
+				}
+			};
+
+			let username, password;
 			const savedCredentials = await keytar.findCredentials(pkg.name);
 
 			if (savedCredentials && savedCredentials.length > 0) {
@@ -180,21 +196,7 @@ prog
 			}
 			if (fullQuery) logger.debug('The JQL query has been prepared', { fullQuery });
 
-			let searchResult;
-			let credentialsAreValid = false;
-			while (!credentialsAreValid) {
-				try {
-					searchResult = await api.searchItems(fullQuery);
-					credentialsAreValid = true;
-				} catch (error) {
-					if (error instanceof InvalidCredentialsError) {
-						logger.error(error.message);
-						await keytar.deletePassword(pkg.name, username);
-						api.credentials = await askForCredentials();
-					}
-				}
-			}
-
+			const searchResult = await executeApiAction(async () => await api.searchItems(fullQuery));
 			logger.debug('The items have been retrieved from JIRA', { itemsCount: searchResult.issues.length });
 
 			for (let item of searchResult.issues) {
@@ -202,7 +204,7 @@ prog
 				const { key } = item;
 
 				if (worklog.total > worklog.maxResults) {
-					worklog = await api.getWorklogByItemKey(key);
+					worklog = await executeApiAction(async () => await api.getWorklogByItemKey(key));
 				}
 
 				for (let worklogItem of worklog.worklogs) {
