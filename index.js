@@ -173,7 +173,7 @@ prog
 
 			if (savedCredentials && savedCredentials.length > 0) {
 				({ account: username, password } = savedCredentials[0]);
-				logger.debug('Saved credentials was retrieved from the credentials manager', { username });
+				logger.debug('Saved credentials were retrieved from the credentials manager', { username });
 			} else {
 				({ username, password } = await askForCredentials());
 			}
