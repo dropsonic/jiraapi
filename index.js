@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-process.removeAllListeners('warning'); // to disable 'ExperimentalWarning: The fs.promises API is experimental'
 
 const pkg = require('./package.json');
 const prog = require('caporal');
