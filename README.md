@@ -31,13 +31,13 @@ jiraapi worklog -a "jsmith, maxwell.baker, john.deer, alexa.bloom" -t "2019 Q4" 
 
 Output:
 
-```
-alexa.bloom		73.79d
-john.deer		54.09d
-jsmith			30.89d
-maxwell.baker	47.87d
+```bash
+alexa.bloom     73.79d
+john.deer       54.09d
+jsmith          30.89d
+maxwell.baker   47.87d
 
-Total			206.64d
+Total           206.64d
 ```
 
 ### Getting an aggregated worklog using a custom JQL query
@@ -54,17 +54,17 @@ jiraapi worklog -a "jsmith, alexa.bloom" -t "2019-12" --detailed
 
 Output:
 
-```
-alexa.bloom	2.82d
-	DEV-1922 (https://jira.mydomain.com/browse/DEV-1922) 1.76d
-	DEV-1378 (https://jira.mydomain.com/browse/DEV-1378) 1.06d
+```bash
+alexa.bloom 2.82d
+    DEV-1922 (https://jira.mydomain.com/browse/DEV-1922) 1.76d
+    DEV-1378 (https://jira.mydomain.com/browse/DEV-1378) 1.06d
 
-jsmith		7.93d
-	PI-223 (https://jira.mydomain.com/browse/PI-223) 3.46d
-	QA-8842 (https://jira.mydomain.com/browse/QA-8842) 2.29d
+jsmith      7.93d
+    PI-223 (https://jira.mydomain.com/browse/PI-223) 3.46d
+    QA-8842 (https://jira.mydomain.com/browse/QA-8842) 2.29d
     DEV-1922 (https://jira.mydomain.com/browse/DEV-1922) 2.18d
 
-Total		12.23d
+Total       12.23d
 ```
 
 ### Getting a human-readable output for large amounts of time
@@ -75,12 +75,12 @@ jiraapi worklog -a "jsmith, maxwell.baker, john.deer, alexa.bloom, ndaniels" -t 
 
 Output:
 
-```
-alexa.bloom		2 months, 2 weeks, 3 days, 2 hours, 46 minutes
-john.deer		1 month, 2 weeks, 5 hours, 3 minutes
-jsmith			3 months, 2 weeks, 2 days, 3 hours, 27 minutes
-maxwell.baker	2 months, 2 weeks, 4 days, 4 hours, 2 minutes
-ndaninels		2 months, 1 week, 1 day, 5 hours, 48 minutes
+```bash
+alexa.bloom     2 months, 2 weeks, 3 days, 2 hours, 46 minutes
+john.deer       1 month, 2 weeks, 5 hours, 3 minutes
+jsmith          3 months, 2 weeks, 2 days, 3 hours, 27 minutes
+maxwell.baker   2 months, 2 weeks, 4 days, 4 hours, 2 minutes
+ndaninels       2 months, 1 week, 1 day, 5 hours, 48 minutes
 
-Total			1 year, 3 weeks, 4 hours, 30 minutes
+Total           1 year, 3 weeks, 4 hours, 30 minutes
 ```
