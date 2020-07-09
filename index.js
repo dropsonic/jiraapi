@@ -8,6 +8,7 @@ const chalk = require("chalk");
 const terminalLink = require("terminal-link");
 const prompt = require("prompt");
 const keytar = require("keytar");
+const cliProgress = require("cli-progress");
 const util = require("util");
 const {
   JiraApi,
@@ -247,6 +248,15 @@ prog
         itemsCount: searchResult.issues.length,
       });
 
+      const progressBar = new cliProgress.SingleBar(
+        {
+          clearOnComplete: true,
+          hideCursor: true,
+        },
+        cliProgress.Presets.shades_classic
+      );
+      progressBar.start(searchResult.issues.length, 0);
+
       for (let item of searchResult.issues) {
         let { worklog } = item.fields;
         const { key } = item;
@@ -280,7 +290,11 @@ prog
             }
           }
         }
+
+        progressBar.increment();
       }
+
+      progressBar.stop();
 
       const formatDuration = (duration) => {
         let durationStr;
