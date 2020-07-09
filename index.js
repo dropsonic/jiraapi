@@ -262,7 +262,7 @@ prog
 
       if (!searchResult) {
         searchResult = await executeApiAction(
-          async () => await api.searchItems(fullQuery)
+          async () => await api.searchItems(fullQuery, { subtasks: true })
         );
       }
 

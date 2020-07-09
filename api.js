@@ -86,13 +86,21 @@ class JiraApi {
     return data;
   }
 
-  async searchItems(jqlQuery, expand = { worklog: true, subtasks: false }) {
+  /**
+   *
+   * @param {string} jqlQuery - JQL query to perform the search
+   * @param {Object} [expand] Expansion settings for the query
+   * @param {boolean} [expand.worklog=true] Include the worklog items for each JIRA item
+   * @param {boolean} [expand.subtasks=false] Include the list of subtasks for each JIRA item
+   */
+  async searchItems(jqlQuery, { worklog = true, subtasks = false } = {}) {
+    const expand = { worklog, subtasks };
     const fields = Object.keys(expand)
       .filter((k) => expand[k] === true)
       .join(',');
-    const { data } = await this.api.get('/search', {
-      params: { jql: jqlQuery, fields },
-    });
+    const params = { fields };
+    if (jqlQuery) params.jql = jqlQuery;
+    const { data } = await this.api.get('/search', { params });
     return data;
   }
 
