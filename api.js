@@ -1,5 +1,6 @@
 const axios = require("axios").default;
 const urlJoin = require("url-join");
+const endOfLine = require("os").EOL;
 
 class JiraApi {
   constructor(baseUrl, username, password, options) {
@@ -35,16 +36,25 @@ class JiraApi {
       (error) => {
         logResponse(error.response);
 
-        if (error.response.status === 401) {
-          throw new InvalidCredentialsError(
-            "Invalid credentials. Please check that your username and password are correct."
-          );
-        } else if (error.response.status === 403) {
-          throw new AccessDeniedError(
-            "You do not have access to the entities you're querying. Please contact the JIRA administrator or try another credentials."
-          );
-        } else {
-          return Promise.reject(error);
+        switch (error.response.status) {
+          case 400:
+            const { errorMessages } = error.response.data;
+            if (errorMessages && errorMessages.length > 0) {
+              throw new BadRequestError(errorMessages.join(endOfLine));
+            }
+            throw new BadRequestError(
+              "The request to JIRA API is invalid. Please contact the administrator."
+            );
+          case 401:
+            throw new InvalidCredentialsError(
+              "Invalid credentials. Please check that your username and password are correct."
+            );
+          case 403:
+            throw new AccessDeniedError(
+              "You do not have access to the entities you're querying. Please contact the JIRA administrator or try another credentials."
+            );
+          default:
+            return Promise.reject(error);
         }
       }
     );
@@ -76,9 +86,12 @@ class JiraApi {
     return data;
   }
 
-  async searchItems(jqlQuery) {
+  async searchItems(jqlQuery, expand = { worklog: true, subtasks: false }) {
+    const fields = Object.keys(expand)
+      .filter((k) => expand[k] === true)
+      .join(",");
     const { data } = await this.api.get("/search", {
-      params: { jql: jqlQuery, fields: "worklog,subtasks" },
+      params: { jql: jqlQuery, fields },
     });
     return data;
   }
@@ -108,6 +121,17 @@ class AccessDeniedError extends Error {
   }
 }
 
+class BadRequestError extends Error {
+  constructor(...params) {
+    super(...params);
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, AccessDeniedError);
+    }
+  }
+}
+
 module.exports.JiraApi = JiraApi;
 module.exports.InvalidCredentialsError = InvalidCredentialsError;
 module.exports.AccessDeniedError = AccessDeniedError;
+module.exports.BadRequestError = BadRequestError;

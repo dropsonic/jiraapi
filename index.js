@@ -13,6 +13,7 @@ const {
   JiraApi,
   InvalidCredentialsError,
   AccessDeniedError,
+  BadRequestError,
 } = require("./api");
 const { action } = require("caporal");
 
@@ -200,7 +201,7 @@ prog
               await keytar.deletePassword(pkg.name, username);
               api.credentials = await askForCredentials();
             } else {
-              break;
+              throw error;
             }
           }
         }
@@ -221,6 +222,7 @@ prog
 
       assignees = assignees.map((a) => a.trim().toLowerCase());
       const result = {};
+      let searchResult;
       assignees.forEach((a) => (result[a] = { [Symbol.for("total")]: 0 }));
       const api = new JiraApi(url, username, password, { logger });
       let fullQuery = `worklogAuthor in (${assignees.join(",")})`;
@@ -237,12 +239,32 @@ prog
       if (query) {
         fullQuery = `${fullQuery} AND (${query})`;
       }
-      if (fullQuery)
+      if (fullQuery) {
         logger.debug("The JQL query has been prepared", { fullQuery });
+        // Expand subtasks using functions from Adaptavist ScriptRunner plugin. If it is not installed, use the default (fallback) path.
+        const quoteChar = fullQuery.includes("'") ? '"' : "'";
+        const scriptedQuery = `(${fullQuery}) OR issueFunction in subtasksOf(${quoteChar}${fullQuery}${quoteChar})`;
+        logger.debug(
+          "The JQL query has been prepared, expanding subtasks by using Adaptivist ScriptRunner",
+          { scriptedQuery }
+        );
 
-      const searchResult = await executeApiAction(
-        async () => await api.searchItems(fullQuery)
-      );
+        try {
+          searchResult = await executeApiAction(
+            async () => await api.searchItems(scriptedQuery)
+          );
+        } catch (error) {
+          if (error instanceof BadRequestError)
+            logger.debug("Adaptavist ScriptRunner plugin is not installed");
+          else throw error;
+        }
+      }
+
+      if (!searchResult) {
+        searchResult = await executeApiAction(
+          async () => await api.searchItems(fullQuery)
+        );
+      }
 
       const allItems = searchResult.issues.reduce((acc, i) => {
         acc.push(i);
@@ -253,7 +275,7 @@ prog
 
       logger.debug("The items have been retrieved from JIRA", {
         itemsCount: searchResult.issues.length,
-        subtasksCount: allItems.length - searchResult.issues.length,
+        subitemsCount: allItems.length - searchResult.issues.length,
       });
 
       for (let item of allItems) {
