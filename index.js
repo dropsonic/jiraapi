@@ -261,23 +261,29 @@ prog
           const user = worklogItem.author.key.toLowerCase();
 
           if (assignees.includes(user)) {
-            let started = moment(worklogItem.started);
-            let ended = started.clone().add(worklogItem.timeSpentSeconds, "s");
+            let duration = worklogItem.timeSpentSeconds;
 
-            if (
-              started.isBetween(timeperiod.start, timeperiod.end) ||
-              ended.isBetween(timeperiod.start, timeperiod.end)
-            ) {
-              if (started.isBefore(timeperiod.start))
-                started = timeperiod.start;
-              if (ended.isAfter(timeperiod.end)) ended = timeperiod.end;
+            if (timeperiod) {
+              let started = moment(worklogItem.started);
+              let ended = started
+                .clone()
+                .add(worklogItem.timeSpentSeconds, "s");
 
-              const duration = ended.diff(started, "s");
+              if (
+                started.isBetween(timeperiod.start, timeperiod.end) ||
+                ended.isBetween(timeperiod.start, timeperiod.end)
+              ) {
+                if (started.isBefore(timeperiod.start))
+                  started = timeperiod.start;
+                if (ended.isAfter(timeperiod.end)) ended = timeperiod.end;
 
-              if (!result[user][key]) result[user][key] = 0;
-              result[user][key] += duration;
-              result[user][Symbol.for("total")] += duration;
+                duration = ended.diff(started, "s");
+              }
             }
+
+            if (!result[user][key]) result[user][key] = 0;
+            result[user][key] += duration;
+            result[user][Symbol.for("total")] += duration;
           }
         }
       }
