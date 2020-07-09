@@ -1,6 +1,6 @@
 {
 	"name": "@acumatica/jiraapi",
-	"version": "1.3.1",
+	"version": "1.3.2",
 	"description": "A set of helper tools to work with JIRA API",
 	"bin": {
 		"jiraapi": "index.js"
