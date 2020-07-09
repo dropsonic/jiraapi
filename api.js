@@ -1,6 +1,6 @@
 const axios = require('axios').default;
 const urlJoin = require('url-join');
-const endOfLine = require('os').EOL;
+const { EOL } = require('os');
 
 class JiraApi {
   constructor(baseUrl, username, password, options) {
@@ -40,7 +40,7 @@ class JiraApi {
           case 400:
             const { errorMessages } = error.response.data;
             if (errorMessages && errorMessages.length > 0) {
-              throw new BadRequestError(errorMessages.join(endOfLine));
+              throw new BadRequestError(errorMessages.join(EOL));
             }
             throw new BadRequestError(
               'The request to JIRA API is invalid. Please contact the administrator.'
