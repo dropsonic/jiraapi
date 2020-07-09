@@ -8,6 +8,7 @@ const chalk = require('chalk');
 const terminalLink = require('terminal-link');
 const prompt = require('prompt');
 const keytar = require('keytar');
+const cliProgress = require('cli-progress');
 const util = require('util');
 const {
   JiraApi,
@@ -278,45 +279,62 @@ prog
         subitemsCount: allItems.length - searchResult.issues.length,
       });
 
-      for (let item of allItems) {
-        let { worklog } = item.fields;
-        const { key } = item;
+      const progressBar = new cliProgress.SingleBar(
+        {
+          clearOnComplete: true,
+          hideCursor: true,
+          format:
+            'Getting the details from JIRA... {bar} {percentage}% | ETA: {eta}s',
+        },
+        cliProgress.Presets.shades_classic
+      );
+      progressBar.start(allItems.length, 0);
 
-        if (!worklog || worklog.total > worklog.maxResults) {
-          worklog = await executeApiAction(
-            async () => await api.getWorklogByItemKey(key)
-          );
-        }
+      try {
+        for (let item of allItems) {
+          let { worklog } = item.fields;
+          const { key } = item;
 
-        for (let worklogItem of worklog.worklogs) {
-          const user = worklogItem.author.key.toLowerCase();
-
-          if (assignees.includes(user)) {
-            let duration = worklogItem.timeSpentSeconds;
-
-            if (timeperiod) {
-              let started = moment(worklogItem.started);
-              let ended = started
-                .clone()
-                .add(worklogItem.timeSpentSeconds, 's');
-
-              if (
-                started.isBetween(timeperiod.start, timeperiod.end) ||
-                ended.isBetween(timeperiod.start, timeperiod.end)
-              ) {
-                if (started.isBefore(timeperiod.start))
-                  started = timeperiod.start;
-                if (ended.isAfter(timeperiod.end)) ended = timeperiod.end;
-
-                duration = ended.diff(started, 's');
-              }
-            }
-
-            if (!result[user][key]) result[user][key] = 0;
-            result[user][key] += duration;
-            result[user][Symbol.for('total')] += duration;
+          if (!worklog || worklog.total > worklog.maxResults) {
+            worklog = await executeApiAction(
+              async () => await api.getWorklogByItemKey(key)
+            );
           }
+
+          for (let worklogItem of worklog.worklogs) {
+            const user = worklogItem.author.key.toLowerCase();
+
+            if (assignees.includes(user)) {
+              let duration = worklogItem.timeSpentSeconds;
+
+              if (timeperiod) {
+                let started = moment(worklogItem.started);
+                let ended = started
+                  .clone()
+                  .add(worklogItem.timeSpentSeconds, 's');
+
+                if (
+                  started.isBetween(timeperiod.start, timeperiod.end) ||
+                  ended.isBetween(timeperiod.start, timeperiod.end)
+                ) {
+                  if (started.isBefore(timeperiod.start))
+                    started = timeperiod.start;
+                  if (ended.isAfter(timeperiod.end)) ended = timeperiod.end;
+
+                  duration = ended.diff(started, 's');
+                }
+              }
+
+              if (!result[user][key]) result[user][key] = 0;
+              result[user][key] += duration;
+              result[user][Symbol.for('total')] += duration;
+            }
+          }
+
+          progressBar.increment();
         }
+      } finally {
+        progressBar.stop();
       }
 
       const formatDuration = (duration) => {
