@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 
-const pkg = require("./package.json");
-const prog = require("caporal");
-const humanizeDuration = require("humanize-duration");
-const moment = require("moment");
-const chalk = require("chalk");
-const terminalLink = require("terminal-link");
-const prompt = require("prompt");
-const keytar = require("keytar");
-const util = require("util");
+const pkg = require('./package.json');
+const prog = require('caporal');
+const humanizeDuration = require('humanize-duration');
+const moment = require('moment');
+const chalk = require('chalk');
+const terminalLink = require('terminal-link');
+const prompt = require('prompt');
+const keytar = require('keytar');
+const util = require('util');
 const {
   JiraApi,
   InvalidCredentialsError,
   AccessDeniedError,
   BadRequestError,
-} = require("./api");
-const { action } = require("caporal");
+} = require('./api');
+const { action } = require('caporal');
 
-prompt.message = "";
+prompt.message = '';
 
 prog
   .version(pkg.version)
@@ -25,119 +25,119 @@ prog
   .description(pkg.description)
   .bin(Object.keys(pkg.bin)[0])
   .command(
-    "worklog",
-    "Retrieves a worklog for all items returned by a JQL query"
+    'worklog',
+    'Retrieves a worklog for all items returned by a JQL query'
   )
   .option(
-    "-j, --url <url>",
-    "JIRA URL",
+    '-j, --url <url>',
+    'JIRA URL',
     prog.STRING,
-    "https://jira.acumatica.com",
+    'https://jira.acumatica.com',
     false
   )
   .option(
-    "-q, --query <query>",
+    '-q, --query <query>',
     'A JQL query to retrieve the items. "worklogAuthor" clause is added automatically',
     prog.STRING,
     undefined,
     false
   )
   .option(
-    "-a, --assignees <assignees>",
-    "A comma-separated list of assignees to get the worklog for",
+    '-a, --assignees <assignees>',
+    'A comma-separated list of assignees to get the worklog for',
     prog.LIST,
     undefined,
     true
   )
   .option(
-    "-t, --timeperiod <timeperiod>",
-    "A period of time (a quarter or a month) to retrieve the worklog for. E.g., 2020 Q3, 2020-06, January, 2020, etc.",
+    '-t, --timeperiod <timeperiod>',
+    'A period of time (a quarter or a month) to retrieve the worklog for. E.g., 2020 Q3, 2020-06, January, 2020, etc.',
     (value) => {
-      const quarterFormats = ["YYYY \\QQ", "YYYY, \\QQ"];
-      const monthFormats = ["YYYY-MM", "YYYY MM", "MMM, YYYY", "MMMM, YYYY"];
+      const quarterFormats = ['YYYY \\QQ', 'YYYY, \\QQ'];
+      const monthFormats = ['YYYY-MM', 'YYYY MM', 'MMM, YYYY', 'MMMM, YYYY'];
 
-      const m = moment(value, quarterFormats.concat(monthFormats), "en", true);
+      const m = moment(value, quarterFormats.concat(monthFormats), 'en', true);
       if (m.isValid()) {
         const format = m.creationData().format;
         let unit;
         if (quarterFormats.includes(format)) {
-          unit = "quarter";
+          unit = 'quarter';
         } else {
-          unit = "month";
+          unit = 'month';
         }
 
         return { start: m.clone().startOf(unit), end: m.clone().endOf(unit) };
       } else {
-        throw Error("Invalid date period");
+        throw Error('Invalid date period');
       }
     },
     undefined,
     false
   )
   .option(
-    "--hoursinaday <hoursinaday>",
-    "Defines how many worklog hours in a day",
+    '--hoursinaday <hoursinaday>',
+    'Defines how many worklog hours in a day',
     prog.FLOAT,
     6,
     false
   )
   .option(
-    "--daysinayear <daysinayear>",
-    "Defines how many working days in a year",
+    '--daysinayear <daysinayear>',
+    'Defines how many working days in a year',
     prog.FLOAT,
     247,
     false
   )
-  .option("-d, --detailed", "Show the detailed worklog for each JIRA item")
+  .option('-d, --detailed', 'Show the detailed worklog for each JIRA item')
   .option(
-    "--itemtype <itemtype>",
-    "Allows you to choose one of the predefined filters: SupportRequests or ExternalBugs",
+    '--itemtype <itemtype>',
+    'Allows you to choose one of the predefined filters: SupportRequests or ExternalBugs',
     (value) => {
       switch (value.toLowerCase()) {
-        case "supportrequests":
-          return "Type = SupportRequest";
-        case "externalbugs":
+        case 'supportrequests':
+          return 'Type = SupportRequest';
+        case 'externalbugs':
           return "Type = Bug and 'How Found' = External";
         default:
-          throw Error("Unsupported predefined filter");
+          throw Error('Unsupported predefined filter');
       }
     },
     undefined,
     false
   )
   .option(
-    "--orderby <orderby>",
-    "Specifies a sort order: username or duration",
+    '--orderby <orderby>',
+    'Specifies a sort order: username or duration',
     (value) => {
       switch (value.toLowerCase()) {
-        case "username":
-        case "duration":
+        case 'username':
+        case 'duration':
           return value;
       }
-      throw Error("Unsupported sort order");
+      throw Error('Unsupported sort order');
     },
-    "username",
+    'username',
     false
   )
   .option(
-    "--delimiter <delimiter>",
-    "Delimiter that is used in the output to separate the username and the duration",
+    '--delimiter <delimiter>',
+    'Delimiter that is used in the output to separate the username and the duration',
     prog.STRING,
-    "\t",
+    '\t',
     false
   )
   .option(
-    "--humanize",
-    "Format the worklog duration to a human-readable format",
+    '--humanize',
+    'Format the worklog duration to a human-readable format',
     prog.BOOL
   )
   .option(
-    "--nounits",
-    "Omit the units for the worklog duration, printing only the numbers",
+    '--nounits',
+    'Omit the units for the worklog duration, printing only the numbers',
     prog.BOOL
   )
-  .option("--no-color", "Disable colors", prog.BOOL, false, false)
-  .option("--hidetotal", "Hide the totals", prog.BOOL)
+  .option('--no-color', 'Disable colors', prog.BOOL, false, false)
+  .option('--hidetotal', 'Hide the totals', prog.BOOL)
   .action(
     async (
       args,
@@ -164,24 +164,24 @@ prog
         const { username, password } = await getPrompt({
           properties: {
             username: {
-              description: "Enter your username",
-              message: "Username cannot be empty",
-              type: "string",
+              description: 'Enter your username',
+              message: 'Username cannot be empty',
+              type: 'string',
               required: true,
             },
             password: {
-              description: "Enter your password",
-              message: "Password cannot be empty",
-              type: "string",
+              description: 'Enter your password',
+              message: 'Password cannot be empty',
+              type: 'string',
               required: true,
               hidden: true,
-              replace: "*",
+              replace: '*',
             },
           },
         });
 
         await keytar.setPassword(pkg.name, username, password);
-        logger.debug("Credentials was saved to the credentials manager", {
+        logger.debug('Credentials was saved to the credentials manager', {
           username,
         });
 
@@ -213,7 +213,7 @@ prog
       if (savedCredentials && savedCredentials.length > 0) {
         ({ account: username, password } = savedCredentials[0]);
         logger.debug(
-          "Saved credentials were retrieved from the credentials manager",
+          'Saved credentials were retrieved from the credentials manager',
           { username }
         );
       } else {
@@ -223,14 +223,14 @@ prog
       assignees = assignees.map((a) => a.trim().toLowerCase());
       const result = {};
       let searchResult;
-      assignees.forEach((a) => (result[a] = { [Symbol.for("total")]: 0 }));
+      assignees.forEach((a) => (result[a] = { [Symbol.for('total')]: 0 }));
       const api = new JiraApi(url, username, password, { logger });
-      let fullQuery = `worklogAuthor in (${assignees.join(",")})`;
+      let fullQuery = `worklogAuthor in (${assignees.join(',')})`;
       if (timeperiod) {
         fullQuery = `worklogDate >= ${timeperiod.start.format(
-          "YYYY-MM-DD"
+          'YYYY-MM-DD'
         )} AND worklogDate <= ${timeperiod.end.format(
-          "YYYY-MM-DD"
+          'YYYY-MM-DD'
         )} AND ${fullQuery}`;
       }
       if (itemtype) {
@@ -240,12 +240,12 @@ prog
         fullQuery = `${fullQuery} AND (${query})`;
       }
       if (fullQuery) {
-        logger.debug("The JQL query has been prepared", { fullQuery });
+        logger.debug('The JQL query has been prepared', { fullQuery });
         // Expand subtasks using functions from Adaptavist ScriptRunner plugin. If it is not installed, use the default (fallback) path.
         const quoteChar = fullQuery.includes("'") ? '"' : "'";
         const scriptedQuery = `(${fullQuery}) OR issueFunction in subtasksOf(${quoteChar}${fullQuery}${quoteChar})`;
         logger.debug(
-          "The JQL query has been prepared, expanding subtasks by using Adaptivist ScriptRunner",
+          'The JQL query has been prepared, expanding subtasks by using Adaptivist ScriptRunner',
           { scriptedQuery }
         );
 
@@ -255,7 +255,7 @@ prog
           );
         } catch (error) {
           if (error instanceof BadRequestError)
-            logger.debug("Adaptavist ScriptRunner plugin is not installed");
+            logger.debug('Adaptavist ScriptRunner plugin is not installed');
           else throw error;
         }
       }
@@ -273,7 +273,7 @@ prog
         return acc;
       }, []);
 
-      logger.debug("The items have been retrieved from JIRA", {
+      logger.debug('The items have been retrieved from JIRA', {
         itemsCount: searchResult.issues.length,
         subitemsCount: allItems.length - searchResult.issues.length,
       });
@@ -298,7 +298,7 @@ prog
               let started = moment(worklogItem.started);
               let ended = started
                 .clone()
-                .add(worklogItem.timeSpentSeconds, "s");
+                .add(worklogItem.timeSpentSeconds, 's');
 
               if (
                 started.isBetween(timeperiod.start, timeperiod.end) ||
@@ -308,13 +308,13 @@ prog
                   started = timeperiod.start;
                 if (ended.isAfter(timeperiod.end)) ended = timeperiod.end;
 
-                duration = ended.diff(started, "s");
+                duration = ended.diff(started, 's');
               }
             }
 
             if (!result[user][key]) result[user][key] = 0;
             result[user][key] += duration;
-            result[user][Symbol.for("total")] += duration;
+            result[user][Symbol.for('total')] += duration;
           }
         }
       }
@@ -334,12 +334,12 @@ prog
               mo: 1000 * 60 * 60 * hoursinaday * (daysinayear / 12),
               y: 1000 * 60 * 60 * hoursinaday * daysinayear,
             },
-            units: ["y", "mo", "w", "d", "h", "m"],
+            units: ['y', 'mo', 'w', 'd', 'h', 'm'],
             round: true,
           });
         } else {
           durationStr = (duration / 60 / 60 / hoursinaday).toFixed(2);
-          if (!nounits) durationStr += "d";
+          if (!nounits) durationStr += 'd';
         }
 
         return durationStr;
@@ -347,19 +347,19 @@ prog
 
       const orderedResult = Object.keys(result).map((k) => ({
         username: k,
-        duration: result[k][Symbol.for("total")],
+        duration: result[k][Symbol.for('total')],
         details: Object.keys(result[k])
           .map((dk) => ({ key: dk, duration: result[k][dk] }))
           .sort((a, b) => b.duration - a.duration),
       }));
 
       switch (orderby) {
-        case "username":
+        case 'username':
           orderedResult.sort((a, b) =>
-            a.username.localeCompare(b.username, "en-US")
+            a.username.localeCompare(b.username, 'en-US')
           );
           break;
-        case "duration":
+        case 'duration':
           orderedResult.sort((a, b) => b.duration - a.duration);
           break;
       }
@@ -400,7 +400,7 @@ prog
 
       if (!hidetotal) {
         if (!detailed) console.log();
-        let totalTitle = "Total";
+        let totalTitle = 'Total';
         let totalStr = formatDuration(totalDuration);
 
         if (!nocolor) {

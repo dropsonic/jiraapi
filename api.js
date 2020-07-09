@@ -1,6 +1,6 @@
-const axios = require("axios").default;
-const urlJoin = require("url-join");
-const endOfLine = require("os").EOL;
+const axios = require('axios').default;
+const urlJoin = require('url-join');
+const endOfLine = require('os').EOL;
 
 class JiraApi {
   constructor(baseUrl, username, password, options) {
@@ -13,7 +13,7 @@ class JiraApi {
       const { baseURL, method } = config;
       const uri = urlJoin(baseURL, axios.getUri(config));
       if (logger)
-        logger.debug("HTTP request completed", {
+        logger.debug('HTTP request completed', {
           method: method.toUpperCase(),
           uri,
           status: `${status} ${statusText}`,
@@ -21,7 +21,7 @@ class JiraApi {
     };
 
     this.api = axios.create({
-      baseURL: urlJoin(baseUrl, "/rest/api/latest/"),
+      baseURL: urlJoin(baseUrl, '/rest/api/latest/'),
       auth: { username, password },
       params: {
         maxResults: 10000,
@@ -43,11 +43,11 @@ class JiraApi {
               throw new BadRequestError(errorMessages.join(endOfLine));
             }
             throw new BadRequestError(
-              "The request to JIRA API is invalid. Please contact the administrator."
+              'The request to JIRA API is invalid. Please contact the administrator.'
             );
           case 401:
             throw new InvalidCredentialsError(
-              "Invalid credentials. Please check that your username and password are correct."
+              'Invalid credentials. Please check that your username and password are correct.'
             );
           case 403:
             throw new AccessDeniedError(
@@ -89,8 +89,8 @@ class JiraApi {
   async searchItems(jqlQuery, expand = { worklog: true, subtasks: false }) {
     const fields = Object.keys(expand)
       .filter((k) => expand[k] === true)
-      .join(",");
-    const { data } = await this.api.get("/search", {
+      .join(',');
+    const { data } = await this.api.get('/search', {
       params: { jql: jqlQuery, fields },
     });
     return data;
