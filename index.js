@@ -243,15 +243,24 @@ prog
       const searchResult = await executeApiAction(
         async () => await api.searchItems(fullQuery)
       );
+
+      const allItems = searchResult.issues.reduce((acc, i) => {
+        acc.push(i);
+        const { subtasks } = i.fields;
+        if (subtasks) acc.push(...subtasks);
+        return acc;
+      }, []);
+
       logger.debug("The items have been retrieved from JIRA", {
         itemsCount: searchResult.issues.length,
+        subtasksCount: allItems.length - searchResult.issues.length,
       });
 
-      for (let item of searchResult.issues) {
+      for (let item of allItems) {
         let { worklog } = item.fields;
         const { key } = item;
 
-        if (worklog.total > worklog.maxResults) {
+        if (!worklog || worklog.total > worklog.maxResults) {
           worklog = await executeApiAction(
             async () => await api.getWorklogByItemKey(key)
           );

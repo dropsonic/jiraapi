@@ -78,7 +78,7 @@ class JiraApi {
 
   async searchItems(jqlQuery) {
     const { data } = await this.api.get("/search", {
-      params: { jql: jqlQuery, fields: "worklog" },
+      params: { jql: jqlQuery, fields: "worklog,subtasks" },
     });
     return data;
   }
