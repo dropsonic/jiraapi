@@ -2,6 +2,7 @@
 
 const pkg = require('./package.json');
 const prog = require('caporal');
+const _ = require('lodash');
 const humanizeDuration = require('humanize-duration');
 const moment = require('moment');
 const chalk = require('chalk');
@@ -267,12 +268,16 @@ prog
         );
       }
 
-      const allItems = searchResult.issues.reduce((acc, i) => {
-        acc.push(i);
-        const { subtasks } = i.fields;
-        if (subtasks) acc.push(...subtasks);
-        return acc;
-      }, []);
+      const allItems = _.chain(searchResult.issues)
+        .reduce((acc, i) => {
+          acc.push(i);
+          const { subtasks } = i.fields;
+          if (subtasks) acc.push(...subtasks);
+          return acc;
+        }, [])
+        .sortBy('fields.worklog') // move all expanded subtasks without worklog to the end of the list because they can be duplicated but with a worklog
+        .uniqBy((i) => i.key)
+        .value();
 
       logger.debug('The items have been retrieved from JIRA', {
         itemsCount: searchResult.issues.length,

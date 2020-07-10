@@ -22,6 +22,7 @@
 		"cli-progress": "^3.8.2",
 		"humanize-duration": "^3.23.1",
 		"keytar": "^6.0.1",
+		"lodash": "^4.17.19",
 		"moment": "^2.27.0",
 		"pluralize": "^8.0.0",
 		"prompt": "^1.0.0",
