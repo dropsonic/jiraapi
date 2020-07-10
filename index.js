@@ -182,7 +182,7 @@ prog
         });
 
         await keytar.setPassword(pkg.name, username, password);
-        logger.debug('Credentials was saved to the credentials manager', {
+        logger.debug('Credentials were saved to the credentials manager', {
           username,
         });
 
