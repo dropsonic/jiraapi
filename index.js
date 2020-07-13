@@ -11,6 +11,7 @@ const prompt = require('prompt');
 const keytar = require('keytar');
 const cliProgress = require('cli-progress');
 const util = require('util');
+const { performance, PerformanceObserver } = require('perf_hooks');
 const {
   JiraApi,
   InvalidCredentialsError,
@@ -161,6 +162,12 @@ prog
       },
       logger
     ) => {
+      const perfObserver = new PerformanceObserver((list, observer) => {
+        logger.debug('Timings', list.getEntries());
+      });
+      perfObserver.observe({ entryTypes: ['measure'] });
+      performance.mark('start');
+
       const getPrompt = util.promisify(prompt.get); // the default "get" method doesn't work properly with async/await
       const askForCredentials = async () => {
         const { username, password } = await getPrompt({
@@ -433,6 +440,9 @@ prog
 
         console.log(`${totalTitle}${delimiter}${totalStr}`);
       }
+
+      performance.mark('end');
+      performance.measure('total', 'start', 'end');
     }
   );
 
