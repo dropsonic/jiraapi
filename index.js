@@ -318,6 +318,7 @@ prog
 
             if (assignees.includes(user)) {
               let duration = worklogItem.timeSpentSeconds;
+              let shouldAddDuration = false;
 
               if (timeperiod) {
                 let started = moment(worklogItem.started);
@@ -334,12 +335,17 @@ prog
                   if (ended.isAfter(timeperiod.end)) ended = timeperiod.end;
 
                   duration = ended.diff(started, 's');
+                  shouldAddDuration = true;
                 }
+              } else {
+                shouldAddDuration = true;
               }
 
-              if (!result[user][key]) result[user][key] = 0;
-              result[user][key] += duration;
-              result[user][Symbol.for('total')] += duration;
+              if (shouldAddDuration) {
+                if (!result[user][key]) result[user][key] = 0;
+                result[user][key] += duration;
+                result[user][Symbol.for('total')] += duration;
+              }
             }
           }
 
