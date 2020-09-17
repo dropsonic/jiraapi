@@ -200,7 +200,7 @@ prog
       const executeApiAction = async (action) => {
         while (true) {
           try {
-            return action();
+            return await action();
           } catch (error) {
             if (
               error instanceof InvalidCredentialsError ||
