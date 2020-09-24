@@ -283,7 +283,15 @@ prog
                 assigneeSearchQuery
               )}' cannot be found in JIRA.`
             );
-          } else if (users.length == 1) {
+          } else if (
+            users.length == 1 ||
+            users.some(
+              (u) =>
+                u.email === assigneeSearchQuery ||
+                u.key === assigneeSearchQuery ||
+                u.name === assigneeSearchQuery
+            )
+          ) {
             userIndex = 1;
           } else {
             usersProgressBar.stop();
