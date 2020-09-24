@@ -110,7 +110,7 @@ class JiraApi {
 
   async searchUsers(searchQuery) {
     const { data } = await this.api.get('/user/search', {
-      params: { username: searchQuery },
+      params: { username: searchQuery, includeInactive: true },
     });
     return data;
   }
