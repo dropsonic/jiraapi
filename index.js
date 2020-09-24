@@ -141,6 +141,13 @@ prog
   )
   .option('--no-color', 'Disable colors', prog.BOOL, false, false)
   .option('--hidetotal', 'Hide the totals', prog.BOOL)
+  .option(
+    '--useusernames',
+    'Shows usernames instead of display names in the results',
+    prog.BOOL,
+    false,
+    false
+  )
   .action(
     async (
       args,
@@ -159,6 +166,7 @@ prog
         humanize,
         nocolor,
         hidetotal,
+        useusernames,
       },
       logger
     ) => {
@@ -507,6 +515,11 @@ prog
       let totalDuration = 0;
 
       for (let { username, duration, details } of orderedResult) {
+        if (!useusernames) {
+          username = assignees.find(
+            (u) => u.key.trim().toLowerCase() === username
+          ).displayName;
+        }
         username = styles.results.username(username);
         totalDuration += duration;
         let durationStr = styles.results.duration(formatDuration(duration));
