@@ -291,51 +291,55 @@ prog
                 assigneeSearchQuery
               )}' cannot be found in JIRA.`
             );
-          } else if (
-            users.length == 1 ||
-            users.some(
-              (u) =>
-                u.email === assigneeSearchQuery ||
-                u.key === assigneeSearchQuery ||
-                u.name === assigneeSearchQuery
-            )
-          ) {
+          } else if (users.length == 1) {
             userIndex = 1;
           } else {
-            usersProgressBar.stop();
-            console.log(
-              `Multiple JIRA users have been found for '${styles.users.searchQuery(
-                assigneeSearchQuery
-              )}':`
-            );
+            userIndex =
+              users.findIndex(
+                (u) =>
+                  u.email === assigneeSearchQuery ||
+                  u.key === assigneeSearchQuery ||
+                  u.name === assigneeSearchQuery
+              ) + 1;
 
-            for (let j = 0; j < users.length; j++) {
-              const user = users[j];
+            if (userIndex <= 0) {
+              usersProgressBar.stop();
               console.log(
-                `(${styles.users.userIndex(j + 1)}) ${styles.users.displayName(
-                  user.displayName
-                )} ${styles.users.email(
-                  `<${user.emailAddress}>`
-                )} (${styles.users.username(user.name)})`
+                `Multiple JIRA users have been found for '${styles.users.searchQuery(
+                  assigneeSearchQuery
+                )}':`
               );
-            }
 
-            ({ userIndex } = await getPrompt({
-              properties: {
-                userIndex: {
-                  description:
-                    'Please choose the desired user by entering its number',
-                  message:
-                    'You must choose a user from the list by entering a valid index',
-                  type: 'integer',
-                  required: true,
-                  conform: (value) => value >= 1 && value <= users.length,
+              for (let j = 0; j < users.length; j++) {
+                const user = users[j];
+                console.log(
+                  `(${styles.users.userIndex(
+                    j + 1
+                  )}) ${styles.users.displayName(
+                    user.displayName
+                  )} ${styles.users.email(
+                    `<${user.emailAddress}>`
+                  )} (${styles.users.username(user.name)})`
+                );
+              }
+
+              ({ userIndex } = await getPrompt({
+                properties: {
+                  userIndex: {
+                    description:
+                      'Please choose the desired user by entering its number',
+                    message:
+                      'You must choose a user from the list by entering a valid index',
+                    type: 'integer',
+                    required: true,
+                    conform: (value) => value >= 1 && value <= users.length,
+                  },
                 },
-              },
-            }));
+              }));
 
-            console.log();
-            usersProgressBar.start(assignees.length, i + 1);
+              console.log();
+              usersProgressBar.start(assignees.length, i + 1);
+            }
           }
 
           assignees[i] = users[userIndex - 1];
