@@ -47,7 +47,7 @@ prog
   )
   .option(
     '-a, --assignees <assignees>',
-    'A comma-separated list of assignees to get the worklog for',
+    'A comma-separated list of assignees to get the worklog for. A full name, email, JIRA username or their parts can be used to search for the assignee. In case of ambiguity, the system will ask you which user to choose.',
     prog.LIST,
     undefined,
     true
@@ -168,6 +168,25 @@ prog
       perfObserver.observe({ entryTypes: ['measure'] });
       performance.mark('start');
 
+      const styles = {
+        users: {
+          searchQuery: nocolor ? chalk.reset : chalk.blue,
+          userIndex: nocolor ? chalk.reset : chalk.bold.blueBright,
+          username: nocolor ? chalk.reset : chalk.reset,
+          email: nocolor ? chalk.reset : chalk.grey,
+          displayName: nocolor ? chalk.reset : chalk.reset,
+        },
+        results: {
+          username: nocolor ? chalk.reset : chalk.bold.blue,
+          duration: nocolor ? chalk.reset : chalk.green,
+          issueKey: nocolor ? chalk.reset : chalk.bold.cyan,
+          total: {
+            title: nocolor ? chalk.reset : chalk.bold.underline.blueBright,
+            duration: nocolor ? chalk.reset : chalk.bold.greenBright,
+          },
+        },
+      };
+
       const getPrompt = util.promisify(prompt.get); // the default "get" method doesn't work properly with async/await
       const askForCredentials = async () => {
         const { username, password } = await getPrompt({
@@ -216,6 +235,19 @@ prog
         }
       };
 
+      const createProgressBar = (text) => {
+        return new cliProgress.SingleBar(
+          {
+            clearOnComplete: true,
+            hideCursor: true,
+            format: `${text} {bar} {percentage}% | ETA: {eta}s`,
+          },
+          cliProgress.Presets.shades_classic
+        );
+      };
+
+      // ---------------------------------------------------------------------
+
       let username, password;
       const savedCredentials = await keytar.findCredentials(pkg.name);
 
@@ -229,12 +261,82 @@ prog
         ({ username, password } = await askForCredentials());
       }
 
-      assignees = assignees.map((a) => a.trim().toLowerCase());
+      const api = new JiraApi(url, username, password, { logger });
+
+      const usersProgressBar = createProgressBar(
+        'Searching for the assignees in JIRA...'
+      );
+      usersProgressBar.start(assignees.length, 0);
+      try {
+        for (let i = 0; i < assignees.length; i++) {
+          const assigneeSearchQuery = assignees[i].trim();
+          const users = await executeApiAction(
+            async () => await api.searchUsers(assigneeSearchQuery)
+          );
+
+          usersProgressBar.increment();
+
+          let userIndex;
+          if (users.length == 0) {
+            throw Error(
+              `A user '${styles.users.searchQuery(
+                assigneeSearchQuery
+              )}' cannot be found in JIRA.`
+            );
+          } else if (users.length == 1) {
+            userIndex = 1;
+          } else {
+            usersProgressBar.stop();
+            console.log(
+              `Multiple JIRA users have been found for '${styles.users.searchQuery(
+                assigneeSearchQuery
+              )}':`
+            );
+
+            for (let j = 0; j < users.length; j++) {
+              const user = users[j];
+              console.log(
+                `(${styles.users.userIndex(j + 1)}) ${styles.users.displayName(
+                  user.displayName
+                )} ${styles.users.email(
+                  `<${user.emailAddress}>`
+                )} (${styles.users.username(user.name)})`
+              );
+            }
+
+            ({ userIndex } = await getPrompt({
+              properties: {
+                userIndex: {
+                  description:
+                    'Please choose the desired user by entering its number',
+                  message:
+                    'You must choose a user from the list by entering a valid index',
+                  type: 'integer',
+                  required: true,
+                  conform: (value) => value >= 1 && value <= users.length,
+                },
+              },
+            }));
+
+            console.log();
+            usersProgressBar.start(assignees.length, i + 1);
+          }
+
+          assignees[i] = users[userIndex - 1];
+        }
+      } finally {
+        usersProgressBar.stop();
+      }
+
       const result = {};
       let searchResult;
-      assignees.forEach((a) => (result[a] = { [Symbol.for('total')]: 0 }));
-      const api = new JiraApi(url, username, password, { logger });
-      let fullQuery = `worklogAuthor in (${assignees.join(',')})`;
+      assignees
+        .map((a) => a.key.trim().toLowerCase())
+        .forEach((a) => (result[a] = { [Symbol.for('total')]: 0 }));
+
+      let fullQuery = `worklogAuthor in (${assignees
+        .map((a) => a.name)
+        .join(',')})`;
       if (timeperiod) {
         fullQuery = `worklogDate >= ${timeperiod.start.format(
           'YYYY-MM-DD'
@@ -291,16 +393,10 @@ prog
         subitemsCount: allItems.length - searchResult.issues.length,
       });
 
-      const progressBar = new cliProgress.SingleBar(
-        {
-          clearOnComplete: true,
-          hideCursor: true,
-          format:
-            'Getting the details from JIRA... {bar} {percentage}% | ETA: {eta}s',
-        },
-        cliProgress.Presets.shades_classic
+      const worklogProgressBar = createProgressBar(
+        'Getting the details from JIRA...'
       );
-      progressBar.start(allItems.length, 0);
+      worklogProgressBar.start(allItems.length, 0);
 
       try {
         for (let item of allItems) {
@@ -314,9 +410,9 @@ prog
           }
 
           for (let worklogItem of worklog.worklogs) {
-            const user = worklogItem.author.name.toLowerCase();
+            const user = worklogItem.author.key.trim().toLowerCase();
 
-            if (assignees.includes(user)) {
+            if (result[user]) {
               let duration = worklogItem.timeSpentSeconds;
               let shouldAddDuration = false;
 
@@ -349,10 +445,10 @@ prog
             }
           }
 
-          progressBar.increment();
+          worklogProgressBar.increment();
         }
       } finally {
-        progressBar.stop();
+        worklogProgressBar.stop();
       }
 
       const formatDuration = (duration) => {
@@ -403,30 +499,21 @@ prog
       let totalDuration = 0;
 
       for (let { username, duration, details } of orderedResult) {
+        username = styles.results.username(username);
         totalDuration += duration;
-        let durationStr = formatDuration(duration);
-
-        if (!nocolor) {
-          username = chalk.bold.blue(username);
-          durationStr = chalk.green(durationStr);
-        }
+        let durationStr = styles.results.duration(formatDuration(duration));
 
         console.log(`${username}${delimiter}${durationStr}`);
 
         if (detailed) {
           for (let { key, duration } of details) {
-            durationStr = formatDuration(duration);
-
+            durationStr = styles.results.duration(formatDuration(duration));
             const itemUrl = api.getViewUrlForItem(key);
-
-            if (!nocolor) {
-              key = chalk.bold.cyan(key);
-              durationStr = chalk.green(durationStr);
-            }
-
+            key = styles.results.issueKey(key);
             const itemLink = terminalLink(key, itemUrl, {
               fallback: (text, url) => `${text} (${url})`, // terminal-link inserts zero-width whitespace before and after the url. It corrupts links in some terminals
             });
+
             console.log(`\t${itemLink}${delimiter}${durationStr}`);
           }
 
@@ -436,13 +523,10 @@ prog
 
       if (!hidetotal) {
         if (!detailed) console.log();
-        let totalTitle = 'Total';
-        let totalStr = formatDuration(totalDuration);
-
-        if (!nocolor) {
-          totalTitle = chalk.bold.underline.blueBright(totalTitle);
-          totalStr = chalk.bold.greenBright(totalStr);
-        }
+        let totalTitle = styles.results.total.title('Total');
+        let totalStr = styles.results.total.duration(
+          formatDuration(totalDuration)
+        );
 
         console.log(`${totalTitle}${delimiter}${totalStr}`);
       }

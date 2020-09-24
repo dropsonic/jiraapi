@@ -107,6 +107,13 @@ class JiraApi {
   getViewUrlForItem(key) {
     return urlJoin(this.baseUrl, `/browse/${key}`);
   }
+
+  async searchUsers(searchQuery) {
+    const { data } = await this.api.get('/user/search', {
+      params: { username: searchQuery },
+    });
+    return data;
+  }
 }
 
 class InvalidCredentialsError extends Error {
