@@ -314,7 +314,7 @@ prog
           }
 
           for (let worklogItem of worklog.worklogs) {
-            const user = worklogItem.author.key.toLowerCase();
+            const user = worklogItem.author.name.toLowerCase();
 
             if (assignees.includes(user)) {
               let duration = worklogItem.timeSpentSeconds;
