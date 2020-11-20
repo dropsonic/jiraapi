@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 
+// Fix embedded hyperlinks for Windows Terminal (see https://github.com/jamestalmage/supports-hyperlinks/issues/7)
+if (process.env.WT_SESSION) {
+  process.env.FORCE_HYPERLINK = 1;
+}
+
 const pkg = require('./package.json');
 const prog = require('caporal');
 const _ = require('lodash');
