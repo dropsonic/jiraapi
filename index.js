@@ -23,7 +23,6 @@ const {
   AccessDeniedError,
   BadRequestError,
 } = require('./api');
-const { action } = require('caporal');
 
 prompt.message = '';
 
