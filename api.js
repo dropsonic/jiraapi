@@ -1,8 +1,8 @@
-const axios = require('axios').default;
-const urlJoin = require('url-join');
-const { EOL } = require('os');
+import axios from 'axios';
+import urlJoin from 'url-join';
+import { EOL } from 'os';
 
-class JiraApi {
+export class JiraApi {
   constructor(baseUrl, username, password, options) {
     const { logger } = options;
 
@@ -116,7 +116,7 @@ class JiraApi {
   }
 }
 
-class InvalidCredentialsError extends Error {
+export class InvalidCredentialsError extends Error {
   constructor(...params) {
     super(...params);
 
@@ -126,7 +126,7 @@ class InvalidCredentialsError extends Error {
   }
 }
 
-class AccessDeniedError extends Error {
+export class AccessDeniedError extends Error {
   constructor(...params) {
     super(...params);
 
@@ -136,7 +136,7 @@ class AccessDeniedError extends Error {
   }
 }
 
-class BadRequestError extends Error {
+export class BadRequestError extends Error {
   constructor(...params) {
     super(...params);
 
@@ -145,8 +145,3 @@ class BadRequestError extends Error {
     }
   }
 }
-
-module.exports.JiraApi = JiraApi;
-module.exports.InvalidCredentialsError = InvalidCredentialsError;
-module.exports.AccessDeniedError = AccessDeniedError;
-module.exports.BadRequestError = BadRequestError;

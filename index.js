@@ -5,24 +5,29 @@ if (process.env.WT_SESSION) {
   process.env.FORCE_HYPERLINK = 1;
 }
 
+// Workaround for importing JSON files as ES6 modules since it is still an experimental feature
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+//import pkg from './package.json' assert { type: 'json' };
 const pkg = require('./package.json');
-const prog = require('caporal');
-const _ = require('lodash');
-const humanizeDuration = require('humanize-duration');
-const moment = require('moment');
-const chalk = require('chalk');
-const terminalLink = require('terminal-link');
-const prompt = require('prompt');
-const keytar = require('keytar');
-const cliProgress = require('cli-progress');
-const util = require('util');
-const { performance, PerformanceObserver } = require('perf_hooks');
-const {
+
+import prog from 'caporal';
+import _ from 'lodash';
+import humanizeDuration from 'humanize-duration';
+import moment from 'moment';
+import chalk from 'chalk';
+import terminalLink from 'terminal-link';
+import prompt from 'prompt';
+import keytar from 'keytar';
+import cliProgress from 'cli-progress';
+import util from 'util';
+import { performance, PerformanceObserver } from 'perf_hooks';
+import {
   JiraApi,
   InvalidCredentialsError,
   AccessDeniedError,
   BadRequestError,
-} = require('./api');
+} from './api.js';
 
 prompt.message = '';
 
