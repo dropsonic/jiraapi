@@ -66,13 +66,17 @@ prog
     'A period of time (a quarter or a month) to retrieve the worklog for. E.g., 2020 Q3, 2020-06, January, 2020, 2022-09-17, 2022-05..2022-06, etc.',
     (value) => {
       const parseMoment = (value) => {
+        const yearFormats = ['YYYY'];
         const quarterFormats = ['YYYY \\QQ', 'YYYY, \\QQ'];
         const monthFormats = ['YYYY-MM', 'YYYY MM', 'MMM, YYYY', 'MMMM, YYYY'];
         const dayFormats = ['YYYY-MM-DD', 'YYYY MM DD'];
 
         const m = moment(
           value.trim(),
-          quarterFormats.concat(monthFormats).concat(dayFormats),
+          yearFormats
+            .concat(quarterFormats)
+            .concat(monthFormats)
+            .concat(dayFormats),
           'en',
           true
         );
@@ -80,7 +84,9 @@ prog
         if (m.isValid()) {
           const format = m.creationData().format;
           let unit;
-          if (quarterFormats.includes(format)) {
+          if (yearFormats.includes(format)) {
+            unit = 'year';
+          } else if (quarterFormats.includes(format)) {
             unit = 'quarter';
           } else if (monthFormats.includes(format)) {
             unit = 'month';
