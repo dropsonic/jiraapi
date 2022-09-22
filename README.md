@@ -17,9 +17,11 @@ On Windows, please make sure that you have `%APPDATA\Roaming\npm` in your PATH e
 On the first execution of any command, the tool will ask you for your JIRA credentials. After that, they will be securely stored on your computer using the default credentials manager on your OS.
 This tool uses Basic Authentication in JIRA REST API.
 
+## Usage
+
 You can use both usernames (`jsmith`) or full names (`Josh Smith`) in the list of assignees. If there are multiple users found by the full name provided, the tool will ask you which one should be used. It is OK to make typos in the user's full name, the tool uses JIRA search to find the appropriate assignee.
 
-## Example
+Time periods support years (`"2022"`), quarters (`"2022 Q3"`, `"2022-Q3"`, `"2022, Q3"`), months (`"2022-07"`, `"2022 07"`, `"Jul, 2022"`, `"July, 2022"`), days (`"2022-09-17"`, `"2022 09 17"`), and ranges for any units mentioned above, using `..` as a separator (`"2022-09-17..2022-09-18"`).
 
 ### Getting an aggregated worklog for a predefined item category
 
