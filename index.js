@@ -63,19 +63,27 @@ prog
   )
   .option(
     '-t, --timeperiod <timeperiod>',
-    'A period of time (a quarter or a month) to retrieve the worklog for. E.g., 2020 Q3, 2020-06, January, 2020, etc.',
+    'A period of time (a quarter or a month) to retrieve the worklog for. E.g., 2020 Q3, 2020-06, January, 2020, 2022-09-17, etc.',
     (value) => {
       const quarterFormats = ['YYYY \\QQ', 'YYYY, \\QQ'];
       const monthFormats = ['YYYY-MM', 'YYYY MM', 'MMM, YYYY', 'MMMM, YYYY'];
+      const dayFormats = ['YYYY-MM-DD', 'YYYY MM DD'];
 
-      const m = moment(value, quarterFormats.concat(monthFormats), 'en', true);
+      const m = moment(
+        value,
+        quarterFormats.concat(monthFormats).concat(dayFormats),
+        'en',
+        true
+      );
       if (m.isValid()) {
         const format = m.creationData().format;
         let unit;
         if (quarterFormats.includes(format)) {
           unit = 'quarter';
-        } else {
+        } else if (monthFormats.includes(format)) {
           unit = 'month';
+        } else {
+          unit = 'day';
         }
 
         return { start: m.clone().startOf(unit), end: m.clone().endOf(unit) };
