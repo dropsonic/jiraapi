@@ -67,7 +67,7 @@ prog
     (value) => {
       const parseMoment = (value) => {
         const yearFormats = ['YYYY'];
-        const quarterFormats = ['YYYY \\QQ', 'YYYY, \\QQ'];
+        const quarterFormats = ['YYYY \\QQ', 'YYYY, \\QQ', 'YYYY-\\QQ'];
         const monthFormats = ['YYYY-MM', 'YYYY MM', 'MMM, YYYY', 'MMMM, YYYY'];
         const dayFormats = ['YYYY-MM-DD', 'YYYY MM DD'];
 
