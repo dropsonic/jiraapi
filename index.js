@@ -266,7 +266,9 @@ prog
               error instanceof InvalidCredentialsError ||
               error instanceof AccessDeniedError
             ) {
-              logger.error(error.message);
+              console.log();
+              console.log(error.message);
+              console.log();
               await keytar.deletePassword(pkg.name, username);
               api.credentials = await askForCredentials();
             } else {
